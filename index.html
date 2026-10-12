@@ -1,0 +1,243 @@
+<title>CMFL Last-Place Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one calm column — a single inverted verdict block, a toggleable odds list, then quiet rounded blocks; orange is used only for the numbers that matter */
+:root{
+  --bg:#ffffff; --ink:#111111; --soft:#f3f2f0; --muted:#7a746d; --orange:#ff5b14; --orange-soft:#ffe8dc;
+  --font:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r-lg:28px; --r-md:18px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c0c0c; --ink:#f4f3f1; --soft:#1a1a19; --muted:#9a948d; --orange:#ff6a2b; --orange-soft:#3a1c0e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c0c0c; --ink:#f4f3f1; --soft:#1a1a19; --muted:#9a948d; --orange:#ff6a2b; --orange-soft:#3a1c0e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.wrap{max-width:680px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;gap:44px}
+h1,h2{margin:0;font-weight:600;letter-spacing:-.02em;text-wrap:balance}
+h1{font-size:2.1rem;line-height:1.1}
+h2{font-size:1.15rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+section{display:grid;gap:16px}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.86rem;color:var(--muted)}
+.brand{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600}
+.brand i{width:10px;height:10px;border-radius:50%;background:var(--orange)}
+header{display:grid;gap:18px}
+
+.verdict{background:var(--ink);color:var(--bg);border-radius:var(--r-lg);padding:28px;display:grid;gap:18px}
+.verdict .lbl{font-size:.9rem;opacity:.65}
+.verdict .big{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.verdict .pct{font-size:clamp(3.4rem,15vw,4.8rem);font-weight:700;line-height:.9;letter-spacing:-.04em;color:var(--orange)}
+.verdict .name{font-size:1.4rem;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.verdict .sub{font-size:.95rem;opacity:.75;max-width:52ch}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border-radius:999px;padding:7px 14px;font-size:.88rem;background:color-mix(in srgb,var(--bg) 12%,transparent)}
+.pill b{font-weight:600;margin-left:6px;color:var(--orange)}
+
+.seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:4px;gap:2px;justify-self:start}
+.seg button{all:unset;cursor:pointer;padding:8px 16px;border-radius:999px;font-size:.9rem;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.seg button:focus-visible,summary:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+
+.odds{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.odds li{display:grid;grid-template-columns:1.6rem minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:12px 4px}
+.odds li + li{border-top:1px solid var(--soft)}
+.odds .rk{color:var(--muted);font-size:.85rem}
+.odds .nm{font-weight:600;overflow-wrap:anywhere}
+.odds .ow{font-size:.82rem;color:var(--muted)}
+.odds .v{font-weight:700;font-size:1.05rem;text-align:right}
+.odds .v.hot{color:var(--orange)}
+.odds .track{grid-column:2/4;height:8px;border-radius:999px;background:var(--soft);overflow:hidden}
+.odds .fill{height:100%;border-radius:999px;background:var(--ink)}
+.odds .fill.hot{background:var(--orange)}
+
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.game{background:var(--soft);border-radius:var(--r-md);padding:12px 16px;display:grid;gap:2px;font-size:.92rem}
+.game div{display:flex;justify-content:space-between;gap:10px}
+.game span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.game .up span{color:var(--ink);font-weight:600}
+
+.awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.award{background:var(--soft);border-radius:var(--r-md);padding:16px 18px;display:grid;gap:2px;min-width:0}
+.award .t{font-size:.82rem;color:var(--muted)}
+.award .w{font-weight:600;overflow-wrap:anywhere}
+.award .d{font-size:.88rem;color:var(--muted)}
+
+.teams{display:grid;gap:8px}
+details{background:var(--soft);border-radius:var(--r-md);overflow:hidden}
+summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:14px 18px}
+summary::-webkit-details-marker{display:none}
+summary .nm{font-weight:600;overflow-wrap:anywhere}
+summary .rec{font-weight:600}
+summary .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted);font-size:1rem;transition:transform .2s}
+details[open] summary .dot{transform:rotate(45deg)}
+.tbody{padding:0 18px 18px;display:grid;gap:14px}
+.tbody ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:.93rem}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.stats div{background:var(--bg);border-radius:14px;padding:10px 12px;display:grid}
+.stats b{font-weight:700}
+.stats b.hot{color:var(--orange)}
+.stats span{font-size:.74rem;color:var(--muted)}
+@media (max-width:440px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.tag{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--orange-soft);color:var(--orange);font-size:.74rem;font-weight:600;vertical-align:2px}
+.empty{background:var(--soft);border-radius:var(--r-lg);padding:32px;text-align:center;color:var(--muted)}
+.foot{font-size:.84rem;color:var(--muted);display:grid;gap:8px;max-width:60ch}
+@media (prefers-reduced-motion:reduce){summary .dot{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="top"><span class="brand"><i></i><span id="lg">CMFL</span></span><span id="status">Loading…</span></div>
+    <h1>who's doing that speech?</h1>
+  </header>
+  <main id="app" style="display:grid;gap:44px">
+    <div class="empty">Pulling the league from Sleeper…</div>
+  </main>
+</div>
+
+<script>
+(function(){
+const LEAGUE_ID=(()=>{try{return new URLSearchParams(location.search).get("league")||"1390835050609651712"}catch(e){return "1390835050609651712"}})();
+const API="https://api.sleeper.app/v1";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f1=n=>n.toFixed(1), f2=n=>n.toFixed(2);
+const pct=x=>x>=0.995?"99%":x<0.005&&x>0?"<1%":Math.round(x*100)+"%";
+let VIEW="last", LAST=null;
+
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function pairs(games){const by={};games.forEach(g=>(by[g.m]=by[g.m]||[]).push(g));return Object.values(by).filter(x=>x.length===2)}
+
+/* ---------- data: live from Sleeper (GitHub Pages), else the stored snapshot (claude.ai) ---------- */
+async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
+async function fromSleeper(){
+  const [lg,st,users,rosters]=await Promise.all([getJSON(`${API}/league/${LEAGUE_ID}`),getJSON(`${API}/state/nfl`),getJSON(`${API}/league/${LEAGUE_ID}/users`),getJSON(`${API}/league/${LEAGUE_ID}/rosters`)]);
+  const end=(lg.settings.playoff_week_start||15)-1, scored=lg.settings.last_scored_leg||0;
+  const weeksRaw=await Promise.all(Array.from({length:end},(_,i)=>getJSON(`${API}/league/${LEAGUE_ID}/matchups/${i+1}`)));
+  const U={};users.forEach(u=>U[u.user_id]=u);
+  const teams=rosters.map(r=>{const u=U[r.owner_id]||{};const tn=(u.metadata&&u.metadata.team_name||"").trim();return{r:r.roster_id,name:tn||u.display_name||`Team ${r.roster_id}`,owner:u.display_name||"—"}});
+  const weeks=weeksRaw.map((arr,i)=>{const w=i+1;
+    const status=w<=scored?"final":(w===scored+1&&(st.week===w||arr.some(g=>g.points>0)))?"live":"upcoming";
+    return{w,status,games:arr.filter(g=>g.matchup_id!=null).map(g=>status==="upcoming"?{r:g.roster_id,m:g.matchup_id}:{r:g.roster_id,m:g.matchup_id,p:+(g.points||0)})}});
+  return{league:lg.name,season:+lg.season,playoffTeams:lg.settings.playoff_teams||8,regSeasonEnd:end,updatedAt:new Date().toISOString(),live:true,teams,weeks};
+}
+
+/* ---------- math ---------- */
+function analyze(S){
+  const T={};S.teams.forEach(t=>T[t.r]={...t,w:0,l:0,t:0,pf:0,pa:0,scores:[],apW:0,apL:0,xw:0,best:null,worst:null,heart:null,steal:null});
+  const finals=S.weeks.filter(w=>w.status==="final"), live=S.weeks.find(w=>w.status==="live"), up=S.weeks.filter(w=>w.status==="upcoming");
+  const all=[];
+  finals.forEach(wk=>{const sc=wk.games.map(g=>g.p);
+    wk.games.forEach(g=>{const t=T[g.r];if(!t)return;t.scores.push(g.p);t.pf+=g.p;all.push(g.p);
+      const beat=sc.filter(x=>x<g.p).length,lost=sc.filter(x=>x>g.p).length;t.apW+=beat;t.apL+=lost;t.xw+=beat/(sc.length-1);
+      if(!t.best||g.p>t.best.p)t.best={p:g.p,w:wk.w};if(!t.worst||g.p<t.worst.p)t.worst={p:g.p,w:wk.w}});
+    pairs(wk.games).forEach(([a,b])=>[[a,b],[b,a]].forEach(([x,y])=>{const t=T[x.r];t.pa+=y.p;
+      if(x.p>y.p){t.w++;if(!t.steal||x.p<t.steal.p)t.steal={p:x.p,w:wk.w,o:y.r}}
+      else if(x.p<y.p){t.l++;if(!t.heart||x.p>t.heart.p)t.heart={p:x.p,w:wk.w,o:y.r}}else t.t++}))});
+  const n=finals.length,L=all.reduce((a,b)=>a+b,0)/(all.length||1);
+  const sd=Math.sqrt(all.reduce((a,b)=>a+(b-L)**2,0)/Math.max(1,all.length-1))||25;
+  const ts=Object.values(T);
+  ts.forEach(t=>{t.mean=t.scores.length?t.pf/t.scores.length:L;t.sd=t.scores.length>1?Math.sqrt(t.scores.reduce((a,b)=>a+(b-t.mean)**2,0)/(t.scores.length-1)):0;t.mu=(n*t.mean+3*L)/(n+3);t.luck=t.w-t.xw;t.opps=[]});
+  const remaining=[...(live?[live]:[]),...up];
+  remaining.forEach(wk=>pairs(wk.games).forEach(([a,b])=>{T[a.r].opps.push(b.r);T[b.r].opps.push(a.r)}));
+  ts.forEach(t=>t.sos=t.opps.length?t.opps.reduce((s,r)=>s+T[r].mu,0)/t.opps.length:0);
+  const sosOrder=ts.slice().sort((a,b)=>b.sos-a.sos).map(t=>t.r);
+  const N=10000,R=rng(hash(S.updatedAt.slice(0,13))),ids=ts.map(t=>t.r);
+  const gauss=()=>{let u=0,v=0;while(!u)u=R();while(!v)v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+  const C={};ids.forEach(r=>C[r]={last:0,po:0,first:0,w:0});
+  for(let i=0;i<N;i++){const w={},pf={};ids.forEach(r=>{w[r]=T[r].w+T[r].t*.5;pf[r]=T[r].pf});
+    remaining.forEach(wk=>pairs(wk.games).forEach(([a,b])=>{let sa=T[a.r].mu+sd*gauss(),sb=T[b.r].mu+sd*gauss();
+      if(wk.status==="live"){sa=Math.max(sa,a.p||0);sb=Math.max(sb,b.p||0)}pf[a.r]+=sa;pf[b.r]+=sb;if(sa>sb)w[a.r]++;else w[b.r]++}));
+    const ord=ids.slice().sort((x,y)=>w[y]-w[x]||pf[y]-pf[x]);
+    C[ord[ord.length-1]].last++;C[ord[0]].first++;ord.slice(0,S.playoffTeams).forEach(r=>C[r].po++);ids.forEach(r=>C[r].w+=w[r])}
+  ids.forEach(r=>{const t=T[r];t.pLast=C[r].last/N;t.pPO=C[r].po/N;t.pFirst=C[r].first/N;t.projW=C[r].w/N;t.sosRank=sosOrder.indexOf(r)+1});
+  return{T,ts,finals,live,n,L,sd};
+}
+
+function awards(A){
+  let hi=null,lo=null,blow=null,close=null;
+  A.finals.forEach(wk=>{wk.games.forEach(g=>{if(!hi||g.p>hi.p)hi={...g,w:wk.w};if(!lo||g.p<lo.p)lo={...g,w:wk.w}});
+    pairs(wk.games).forEach(([a,b])=>{const m=Math.abs(a.p-b.p),[W,Lo]=a.p>b.p?[a,b]:[b,a];
+      if(!blow||m>blow.m)blow={m,W,L:Lo,w:wk.w};if(!close||m<close.m)close={m,W,L:Lo,w:wk.w}})});
+  if(!hi)return[];
+  const by=(k,d=1)=>A.ts.slice().sort((a,b)=>d*(b[k]-a[k]))[0], N=r=>esc(A.T[r].name);
+  const lucky=by("luck"),unlucky=by("luck",-1),pa=by("pa"),swing=by("sd");
+  return[
+    {t:"Highest score",w:N(hi.r),d:`${f2(hi.p)} in week ${hi.w}`},
+    {t:"Lowest score",w:N(lo.r),d:`${f2(lo.p)} in week ${lo.w}`},
+    {t:"Biggest blowout",w:N(blow.W.r),d:`Beat ${N(blow.L.r)} by ${f1(blow.m)} in week ${blow.w}`},
+    {t:"Closest game",w:N(close.W.r),d:`Beat ${N(close.L.r)} by ${f2(close.m)} in week ${close.w}`},
+    {t:"Luckiest",w:esc(lucky.name),d:`${f1(lucky.luck)} more wins than their scoring earned`},
+    {t:"Unluckiest",w:esc(unlucky.name),d:`${f1(-unlucky.luck)} fewer wins than their scoring earned`},
+    {t:"Most points against",w:esc(pa.name),d:`${f1(pa.pa)} scored on them`},
+    {t:"Least predictable",w:esc(swing.name),d:`Weekly scores swing by ±${f1(swing.sd)}`},
+  ];
+}
+
+function facts(t,A){const N=r=>esc(A.T[r].name),o=[];
+  o.push(`Against every team every week, they'd be ${t.apW}–${t.apL}.`);
+  if(Math.abs(t.luck)>=.6)o.push(t.luck>0?`About ${f1(t.luck)} wins luckier than their scoring.`:`About ${f1(-t.luck)} wins unluckier than their scoring.`);
+  if(t.heart&&t.heart.p>=A.L)o.push(`Lost week ${t.heart.w} to ${N(t.heart.o)} while scoring ${f2(t.heart.p)}.`);
+  if(t.steal&&t.steal.p<A.L)o.push(`Won week ${t.steal.w} against ${N(t.steal.o)} with only ${f2(t.steal.p)}.`);
+  if(t.best)o.push(`Best week ${f2(t.best.p)}, worst week ${f2(t.worst.p)}.`);
+  o.push(t.sosRank===1?"Hardest remaining schedule in the league.":t.sosRank===A.ts.length?"Easiest remaining schedule in the league.":`Remaining schedule is #${t.sosRank} hardest of ${A.ts.length}.`);
+  return o.slice(0,4)}
+
+/* ---------- view ---------- */
+function oddsList(A){
+  const key=VIEW==="last"?"pLast":"pPO";
+  const rows=A.ts.slice().sort((a,b)=>b[key]-a[key]||(VIEW==="last"?a.projW-b.projW:b.projW-a.projW));
+  const hot=t=>VIEW==="last"?t.pLast>=.1:t.pPO>=.5;
+  return rows.map((t,i)=>`<li><span class="rk">${i+1}</span><div><div class="nm">${esc(t.name)}</div><div class="ow">${esc(t.owner)} · ${t.w}–${t.l}${t.t?"–"+t.t:""} · ${f1(t.projW)} proj. wins</div></div><span class="v ${hot(t)?"hot":""}">${pct(t[key])}</span><div class="track"><div class="fill ${hot(t)?"hot":""}" style="width:${t[key]*100}%"></div></div></li>`).join("")}
+
+function render(S){
+  LAST=S;const A=analyze(S),top=A.ts.slice().sort((a,b)=>b.pLast-a.pLast)[0];
+  $("#lg").textContent=`${S.league} · ${S.season}`;
+  const when=new Date(S.updatedAt).toLocaleString([], {weekday:"short",hour:"numeric",minute:"2-digit"});
+  $("#status").textContent=`${S.live?"Live":"Updated"} · ${when}`;
+  const rec=t=>`${t.w}–${t.l}${t.t?"–"+t.t:""}`;
+  const runners=A.ts.slice().sort((a,b)=>b.pLast-a.pLast).slice(1,4);
+  let h=`<div class="verdict"><span class="lbl">Most likely to do that speech</span>
+    <div class="big"><span class="pct">${pct(top.pLast)}</span><span class="name">${esc(top.name)}</span></div>
+    <p class="sub">${esc(top.owner)} is ${rec(top)} with ${f1(top.pf)} points and projects to ${f1(top.projW)} wins by week ${S.regSeasonEnd}.</p>
+    <div class="pills">${runners.map(t=>`<span class="pill">${esc(t.name)}<b>${pct(t.pLast)}</b></span>`).join("")}</div></div>`;
+  h+=`<section><div class="head"><h2>Odds</h2><div class="seg" role="group" aria-label="Show odds for">
+    <button id="seg-last" aria-pressed="${VIEW==="last"}">Last place</button><button id="seg-po" aria-pressed="${VIEW==="po"}">Playoffs</button></div></div>
+    <ul class="odds" id="odds">${oddsList(A)}</ul></section>`;
+  if(A.live)h+=`<section><h2>Week ${A.live.w}, in progress</h2><div class="games">${pairs(A.live.games).map(([a,b])=>`<div class="game">${[a,b].map((g,i,x)=>`<div class="${g.p>=x[1-i].p?"up":""}"><span>${esc(A.T[g.r].name)}</span><span>${f2(g.p)}</span></div>`).join("")}</div>`).join("")}</div></section>`;
+  const aw=awards(A);
+  if(aw.length)h+=`<section><h2>Awards so far</h2><div class="awards">${aw.map(a=>`<div class="award"><span class="t">${a.t}</span><span class="w">${a.w}</span><span class="d">${a.d}</span></div>`).join("")}</div></section>`;
+  const stand=A.ts.slice().sort((a,b)=>b.w-a.w||b.pf-a.pf);
+  h+=`<section><h2>Teams</h2><div class="teams">${stand.map(t=>`<details><summary><span class="nm">${esc(t.name)}${t===top?'<span class="tag">Last-place pick</span>':""}</span><span class="rec">${rec(t)}</span><span class="dot" aria-hidden="true">+</span></summary>
+    <div class="tbody"><div class="muted small">${esc(t.owner)}</div><ul>${facts(t,A).map(x=>`<li>${x}</li>`).join("")}</ul>
+    <div class="stats"><div><b>${f1(t.mean)}</b><span>Avg points</span></div><div><b>${f1(t.pa)}</b><span>Points against</span></div><div><b class="${t.pPO>=.5?"hot":""}">${pct(t.pPO)}</b><span>Playoffs</span></div><div><b class="${t.pLast>=.1?"hot":""}">${pct(t.pLast)}</b><span>Last place</span></div></div></div></details>`).join("")}</div></section>`;
+  h+=`<div class="foot"><p>Each team's expected score mixes its own average with the league average (${f1(A.L)}), then the rest of the real schedule is played out 10,000 times. Standings ties go to points for.${A.live?` Week ${A.live.w} scores so far count as a minimum.`:""}</p><p>Data from Sleeper.</p></div>`;
+  $("#app").innerHTML=h;
+  $("#seg-last").onclick=()=>{VIEW="last";render(LAST)};
+  $("#seg-po").onclick=()=>{VIEW="po";render(LAST)};
+}
+function empty(m){$("#app").innerHTML=`<div class="empty">${m}</div>`;$("#status").textContent=""}
+
+async function viaSnapshot(){
+  let db=null;try{db=await window.claude?.use?.("db")}catch(e){}
+  if(!db){empty("Couldn't reach Sleeper. Check your connection and reload.");return}
+  db.doc("league/snapshot").onSnapshot(s=>{if(!s.exists){empty("No league data yet. It refreshes every morning.");return}
+    try{render(JSON.parse(s.data().json))}catch(e){empty("The latest data couldn't be read.")}},()=>empty("Lost the connection. Reload to try again."));
+}
+async function viaLive(){const S=await fromSleeper();render(S);return S}
+
+(async()=>{
+  try{await viaLive();
+    setInterval(()=>{if(document.visibilityState==="visible")viaLive().catch(()=>{})},5*60*1000);
+  }catch(e){viaSnapshot()}
+})();
+window.__cmflAnalyze=analyze;
+})();
+</script>
