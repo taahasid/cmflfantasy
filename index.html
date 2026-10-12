@@ -245,12 +245,18 @@ function receipts(S,A,P,TX){
     Object.entries(t.drops||{}).forEach(([pid,dr])=>{finals.filter(w=>w>=(t.leg||0)).forEach(w=>{
       (S.raw.mu[w-1]||[]).forEach(e=>{if(e.roster_id===dr||!(e.players||[]).includes(pid))return;const p=+((e.players_points||{})[pid]||0);
         if(p>=20&&R[dr]&&(!R[dr].regret||p>R[dr].regret.p))R[dr].regret={pid,p,w,to:e.roster_id}})})})});
-  let fleece=null;
-  trades.forEach(t=>{const got={};(t.roster_ids||[]).forEach(r=>got[r]=0);
-    Object.entries(t.adds||{}).forEach(([pid,r])=>finals.filter(w=>w>=(t.leg||0)).forEach(w=>got[r]=(got[r]||0)+(+(PP[w][pid]||0))));
+  let fleece=null,pending=null;
+  trades.forEach(t=>{const leg=t.leg||0,after=finals.filter(w=>w>=leg),got={},recv={};
+    (t.roster_ids||[]).forEach(r=>{got[r]=0;recv[r]=[]});
+    const active=new Set();
+    Object.entries(t.adds||{}).forEach(([pid,r])=>{(recv[r]=recv[r]||[]).push(pid);
+      after.forEach(w=>(S.raw.mu[w-1]||[]).forEach(e=>{if(e.roster_id!==r||!(e.players||[]).includes(pid))return;active.add(w);
+        const i=(e.starters||[]).indexOf(pid);if(i>=0)got[r]=(got[r]||0)+(+(e.starters_points||[])[i]||0)}))});
+    const ts=t.status_updated||t.created||0,nW=active.size;
+    if(nW<2){if(!pending||ts>pending.ts)pending={ts,recv,weeks:nW};return}
     const s=Object.entries(got).sort((a,b)=>b[1]-a[1]);if(s.length<2)return;
-    const gap=s[0][1]-s[s.length-1][1];if(!fleece||gap>fleece.gap)fleece={gap,win:+s[0][0],wp:s[0][1],lose:+s[s.length-1][0],lp:s[s.length-1][1]}});
-  return{R,worstBench,kq,corpse,fleece,trades:trades.length,nm,hasMoves:TX.length>0};
+    const gap=s[0][1]-s[s.length-1][1];if(!fleece||gap>fleece.gap)fleece={gap,weeks:nW,win:+s[0][0],wp:s[0][1],lose:+s[s.length-1][0],lp:s[s.length-1][1]}});
+  return{R,worstBench,kq,corpse,fleece,pending,trades:trades.length,nm,hasMoves:TX.length>0};
 }
 
 function shameCards(A,F){
@@ -270,8 +276,12 @@ function shameCards(A,F){
     if(ghost)out.push({t:"Ghost manager",w:N(ghost.r),d:ghost.moves?`${ghost.moves} move${ghost.moves>1?"s":""} all season, the last one ${Math.max(1,Math.round((Date.now()-ghost.last)/864e5))} days ago. Check for a pulse.`:`Zero moves all season. Has this person opened the app since the draft?`});
     const reg=arr.filter(x=>x.regret).sort((a,b)=>b.regret.p-a.regret.p)[0];
     if(reg)out.push({t:"Drop regret",w:N(reg.r),d:`Dropped ${esc(F.nm(reg.regret.pid))}, who then dropped ${f1(reg.regret.p)} for ${N(reg.regret.to)} in week ${reg.regret.w}.`});
-    out.push(F.fleece&&F.fleece.gap>0?{t:"Fleece of the year",w:N(F.fleece.win),d:`Got ${f1(F.fleece.wp)} points out of their trade with ${N(F.fleece.lose)}, who got ${f1(F.fleece.lp)}. Somebody got robbed in broad daylight.`}
-      :{t:"Fleece of the year",w:"Nobody",d:"No trades yet. Fourteen grown men, all too scared to hit send."});
+    const names=ids=>ids.map(id=>esc(F.nm(id))).join(", ")||"nothing";
+    if(F.fleece&&F.fleece.gap>=10)out.push({t:"Fleece of the year",w:N(F.fleece.win),d:`Got ${f1(F.fleece.wp)} started points out of their trade with ${N(F.fleece.lose)}, who got ${f1(F.fleece.lp)} over ${F.fleece.weeks} weeks. Robbed in broad daylight.`});
+    else if(F.pending){const [a,b]=Object.keys(F.pending.recv).map(Number);
+      out.push({t:"Fleece of the year",w:"Too early to call",d:`${N(a)} got ${names(F.pending.recv[a])}. ${N(b)} got ${names(F.pending.recv[b])}. Check back in ${2-F.pending.weeks} week${2-F.pending.weeks===1?"":"s"}, then we'll know who got fleeced.`})}
+    else if(F.trades)out.push({t:"Fleece of the year",w:"Nobody",d:"Every trade so far has been roughly fair. Boring."});
+    else out.push({t:"Fleece of the year",w:"Nobody",d:"No trades yet. Fourteen grown men, all too scared to hit send."});
   }
   const brides=top("lossPts");if(brides&&brides.lossPts)out.push({t:"Bridesmaid",w:N(brides.r),d:`${f1(brides.lossPts)} points scored in losses. All that effort, nothing to show for it.`});
   const bandit=top("bandit");if(bandit&&bandit.bandit)out.push({t:"Bandit",w:N(bandit.r),d:`${bandit.bandit} win${bandit.bandit>1?"s":""} while scoring below the league median. Should be under investigation.`});
