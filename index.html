@@ -109,32 +109,27 @@ html{-webkit-text-size-adjust:100%}
 .spark .ax{display:flex;justify-content:space-between;font-size:.75rem;opacity:.6}
 .loading{color:var(--muted);font-size:.9rem}
 
-/* pick'em */
-.pk-me{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted)}
-.pk-me select{font:inherit;font-weight:600;color:var(--ink);background:var(--soft);border:0;border-radius:999px;padding:8px 14px;max-width:min(240px,60vw);cursor:pointer}
-.pk-me select:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+/* very good bad boy vote */
 .pk-sub{font-size:.88rem;color:var(--muted)}
 .pk-sub b{color:var(--ink);font-weight:600}
-.pk-games{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
-.pk-game{background:var(--soft);border-radius:var(--r-md);padding:6px;display:grid;gap:2px;align-content:start;min-width:0}
-.pk-team{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-weight:600;min-width:0}
-.pk-team .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pk-team .rec{flex:none;font-weight:500;font-size:.82rem;color:var(--muted)}
-@media (hover:hover){.pk-team:hover:not(:disabled):not([aria-pressed="true"]){background:var(--bg)}}
-.pk-team[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.pk-team[aria-pressed="true"] .rec{color:inherit;opacity:.7}
-.pk-team:disabled{cursor:default}
-.pk-team:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
-.pk-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 2px;min-width:0}
-.pk-row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
-.pk-row.up .nm,.pk-row.up .sc{color:var(--ink);font-weight:600}
-.pk-row .sc{flex:none}
-.pk-by{font-size:.8rem;color:var(--muted);padding:0 12px 8px;overflow-wrap:anywhere}
-.pk-by b{color:var(--orange);font-weight:600}
 .pk-in{display:flex;flex-wrap:wrap;gap:6px}
 .pk-in span{background:var(--soft);border-radius:999px;padding:4px 10px;font-size:.8rem}
-.pk-in span.me{background:var(--orange-soft);color:var(--orange);font-weight:600}
 .pk-note{background:var(--soft);border-radius:var(--r-md);padding:14px 18px;font-size:.9rem;color:var(--muted)}
+.vb-now{background:var(--orange-soft);border-radius:var(--r-lg);padding:22px 24px;display:grid;gap:6px;min-width:0}
+.vb-now .lbl{font-size:.85rem;font-weight:600;color:var(--orange);display:flex;align-items:center;gap:8px}
+.vb-now .lbl i{width:8px;height:8px;border-radius:50%;background:var(--orange);animation:vb-pulse 1.6s ease-in-out infinite}
+.vb-now .name{font-size:1.6rem;font-weight:700;line-height:1.15;letter-spacing:-.02em;overflow-wrap:anywhere}
+.vb-now .d{font-size:.92rem}
+@keyframes vb-pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.vb-now .lbl i{animation:none}}
+.vb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.vb-pick{all:unset;box-sizing:border-box;cursor:pointer;background:var(--soft);border-radius:12px;padding:11px 14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (hover:hover){.vb-pick:hover:not(:disabled):not([aria-pressed="true"]){background:var(--orange-soft)}}
+.vb-pick[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.vb-pick:disabled{cursor:default;opacity:.55}
+.vb-pick:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.vb-block{display:grid;gap:8px}
+.vb-block h3{margin:0;font-size:.95rem;font-weight:600}
 </style>
 </head>
 <body>
@@ -349,7 +344,7 @@ function facts(t,A,F,top){const N=r=>esc(A.T[r].name),o=[];
   o.push(t.sosRank===1?"Hardest remaining schedule in the league.":t.sosRank===A.ts.length?"Easiest remaining schedule in the league.":`Remaining schedule is #${t.sosRank} hardest of ${A.ts.length}.`);
   return o.slice(0,5)}
 
-/* ---------- pick'em (votes live in Firebase Firestore) ---------- */
+/* ---------- very good bad boy vote (votes live in Firebase Firestore) ---------- */
 const FB_VER="13.0.0";
 const FB_CFG={
   apiKey:"AIzaSyCLthc-853g4KqaCclosmp2-OhFsW7JSpo",
@@ -359,100 +354,93 @@ const FB_CFG={
   messagingSenderId:"286882265072",
   appId:"1:286882265072:web:9c76076a462321260c0f35"
 };
-const PK={started:false,ready:false,err:null,docs:[],fs:null,db:null,me:null,draft:null,timer:null,save:""};
-try{PK.me=+localStorage.getItem("cmfl_me")||null}catch(e){}
+const VB_COL="picks";
+const PK={started:false,ready:false,err:null,docs:[],fs:null,db:null,me:null,save:""};
+/* One vote per device per week: each browser gets a random id, and its vote doc is keyed by it, so voting again just changes that device's vote. */
+try{PK.me=+localStorage.getItem("cmfl_device")||null;if(!PK.me){PK.me=1e5+Math.floor(Math.random()*9e8);localStorage.setItem("cmfl_device",PK.me)}}catch(e){PK.me=PK.me||1e5+Math.floor(Math.random()*9e8)}
 
-/* Backup lock: Thursday 8:15pm ET of NFL week w (the season opens the Thursday after Labor Day). */
+/* Thursday 8:15pm ET of NFL week w (the season opens the Thursday after Labor Day). */
 function kickoff(season,w){
   const d=new Date(Date.UTC(season,8,1));while(d.getUTCDay()!==1)d.setUTCDate(d.getUTCDate()+1);
   d.setUTCDate(d.getUTCDate()+3+7*(w-1));
   const dstEnd=new Date(Date.UTC(season,10,1));while(dstEnd.getUTCDay()!==0)dstEnd.setUTCDate(dstEnd.getUTCDate()+1);
   return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),d>=dstEnd?25:24,15);
 }
-/* A week locks when any CMFL player has scored in it, or at Thursday night kickoff, whichever comes first. */
-function pickWeeks(S){
+/* Week w's vote opens once week w kicks off and closes when week w+1 kicks off.
+   The last regular-season week closes at the first playoff kickoff, which ends the season vote. */
+function voteWeek(S){
   const started=w=>(S.raw.mu[w-1]||[]).some(e=>+e.points)||Date.now()>=kickoff(S.season,w);
-  let open=null,live=null;
-  for(let w=S.raw.scored+1;w<=S.regSeasonEnd;w++){if(started(w)){if(!live)live=w;continue}open=w;break}
-  return{open,live};
+  const end=S.regSeasonEnd,over=Date.now()>=kickoff(S.season,end+1);
+  let open=null;for(let w=1;w<=end;w++)if(started(w))open=w;
+  return{open:over?null:open,over,next:open?null:kickoff(S.season,1)};
 }
 async function startPicks(season){
   if(PK.started)return;PK.started=true;
   try{
     const [app,fs]=await Promise.all([import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-firestore.js`)]);
     PK.fs=fs;PK.db=fs.getFirestore(app.initializeApp(FB_CFG));
-    fs.onSnapshot(fs.query(fs.collection(PK.db,"picks"),fs.where("season","==",season)),
+    fs.onSnapshot(fs.query(fs.collection(PK.db,VB_COL),fs.where("season","==",season)),
       snap=>{PK.docs=snap.docs.map(d=>d.data());PK.ready=true;PK.err=null;renderPicks()},
-      e=>{console.error(e);PK.err="Couldn't load picks. Check that the Firestore database exists and the rules are published.";renderPicks()});
+      e=>{console.error(e);PK.err=`Couldn't load votes. Check that the Firestore rules allow the "${VB_COL}" collection.`;renderPicks()});
   }catch(e){console.error(e);PK.err="Couldn't reach the voting service. Reload to try again.";renderPicks()}
 }
 function setSave(t){PK.save=t;const s=$("#pk-save");if(s)s.textContent=t}
-function queueSave(){
-  clearTimeout(PK.timer);setSave("Saving…");
-  PK.timer=setTimeout(async()=>{
-    const S=DATA,d=PK.draft;if(!S||!d||!PK.db||!PK.me)return;
-    if(pickWeeks(S).open!==d.w){setSave("Week locked, picks not saved");renderPicks();return}
-    const fs=PK.fs,id=`${S.season}-w${d.w}-r${PK.me}`;
-    try{await fs.setDoc(fs.doc(PK.db,"picks",id),{season:S.season,week:d.w,roster:PK.me,picks:d.picks,updated:fs.serverTimestamp()});setSave("Saved")}
-    catch(e){console.error(e);setSave("Couldn't save. Try again.")}
-  },500);
+async function castVote(r){
+  const S=DATA;if(!S||!PK.db||!PK.me)return;
+  const w=voteWeek(S).open;if(!w){setSave("Voting is closed");renderPicks();return}
+  const fs=PK.fs;setSave("Saving…");
+  try{await fs.setDoc(fs.doc(PK.db,VB_COL,`${S.season}-w${w}-r${PK.me}`),{season:S.season,week:w,roster:PK.me,picks:{vote:r},updated:fs.serverTimestamp()});setSave("Vote saved")}
+  catch(e){console.error(e);setSave("Couldn't save. Try again.")}
 }
-function records(S){const R={};S.teams.forEach(t=>R[t.r]=[0,0]);
-  S.weeks.filter(w=>w.status==="final").forEach(wk=>pairs(wk.games).forEach(([a,b])=>{if(a.p>b.p){R[a.r][0]++;R[b.r][1]++}else if(b.p>a.p){R[b.r][0]++;R[a.r][1]++}}));
-  return R}
+/* Season total = every vote across every week. Ties go to whoever won more weeks, then to the most recent week's votes. */
+function tally(S,docs,T){
+  const W={},tot={};S.teams.forEach(t=>tot[t.r]={r:t.r,v:0,wk:0,last:0});
+  docs.forEach(d=>{const v=d.picks&&d.picks.vote;if(!d.roster||!T[v])return;(W[d.week]=W[d.week]||{})[d.roster]=v});
+  const weeks=Object.keys(W).map(Number).sort((a,b)=>a-b),winners=[];
+  weeks.forEach(w=>{const c={};Object.values(W[w]).forEach(r=>{c[r]=(c[r]||0)+1;tot[r].v++});
+    const top=Math.max(...Object.values(c)),who=Object.keys(c).filter(r=>c[r]===top).map(Number);
+    who.forEach(r=>tot[r].wk++);winners.push({w,who,n:top,c})});
+  const lastW=weeks[weeks.length-1];if(lastW)Object.values(W[lastW]).forEach(r=>tot[r].last++);
+  const rows=Object.values(tot).filter(x=>x.v).sort((a,b)=>b.v-a.v||b.wk-a.wk||b.last-a.last);
+  return{W,rows,winners};
+}
 function renderPicks(){
   const el=$("#pickem"),S=DATA;if(!el||!S)return;
-  const T={};S.teams.forEach(t=>T[t.r]=t);if(PK.me&&!T[PK.me])PK.me=null;
-  const N=r=>esc((T[r]||{}).name||"?"),REC=records(S),rec=r=>REC[r]?REC[r].join("–"):"";
-  const byWeek={};PK.docs.forEach(d=>{if(T[d.roster]&&d.picks)(byWeek[d.week]=byWeek[d.week]||{})[d.roster]=d.picks});
-  const {open,live}=pickWeeks(S);
-  const opts=S.teams.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.r}"${t.r===PK.me?" selected":""}>${esc(t.name)}</option>`).join("");
-  let h=`<div class="head"><h2>Pick'em</h2><label class="pk-me">You are<select id="pk-me"><option value="">Choose your team</option>${opts}</select></label></div>`;
-  if(PK.err)h+=`<p class="pk-note">${esc(PK.err)}</p>`;
-  else if(!PK.ready)h+=`<p class="loading">Loading picks…</p>`;
+  const T={};S.teams.forEach(t=>T[t.r]=t);
+  const N=r=>esc((T[r]||{}).name||"?"),when=t=>new Date(t).toLocaleString([],{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const {open,over,next}=voteWeek(S),byName=S.teams.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  let h=`<h2>Very good bad boy</h2>`;
+  if(PK.err){el.innerHTML=h+`<p class="pk-note">${esc(PK.err)}</p>`;return}
+  if(!PK.ready){el.innerHTML=h+`<p class="loading">Loading votes…</p>`;return}
 
-  if(PK.ready&&open){
-    const wk=S.weeks[open-1],games=pairs(wk.games),saved=(byWeek[open]||{})[PK.me]||{};
-    if(!PK.draft||PK.draft.w!==open||PK.draft.r!==PK.me)PK.draft={w:open,r:PK.me,picks:{...saved}};
-    const mine=PK.draft.picks,done=games.filter(([a])=>mine[a.m]!=null).length;
-    const when=new Date(kickoff(S.season,open)).toLocaleString([],{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-    h+=`<p class="pk-sub"><b>Week ${open}</b> · ${PK.me?`${done} of ${games.length} picked · <span id="pk-save">${esc(PK.save)}</span>`:"Choose your team to start picking"}<br>Locks at first kickoff, ${when} at the latest.</p>`;
-    h+=`<div class="pk-games">${games.map(([a,b])=>`<div class="pk-game" role="group" aria-label="${N(a.r)} vs ${N(b.r)}">${[a,b].map(g=>`<button class="pk-team" data-m="${g.m}" data-r="${g.r}" aria-pressed="${+mine[g.m]===g.r}"${PK.me?"":" disabled"}><span class="nm">${N(g.r)}</span><span class="rec">${rec(g.r)}</span></button>`).join("")}</div>`).join("")}</div>`;
-    const inn=Object.keys(byWeek[open]||{}).map(Number);
-    h+=`<div style="display:grid;gap:8px"><p class="pk-sub">${inn.length} of ${S.teams.length} managers have picked. Picks stay hidden until the week locks.</p>${inn.length?`<div class="pk-in">${inn.map(r=>`<span class="${r===PK.me?"me":""}">${N(r)}</span>`).join("")}</div>`:""}</div>`;
-  }
+  const {W,rows,winners}=tally(S,PK.docs,T),lead=rows[0];
+  if(lead){const co=rows.filter(x=>x.v===lead.v&&x.wk===lead.wk&&x.last===lead.last),gap=rows[1]?lead.v-rows[1].v:0;
+    h+=`<div class="vb-now"><span class="lbl">${over?`${S.season} Very Good Bad Boy`:`<i aria-hidden="true"></i>Current Very Good Bad Boy`}</span>
+      <span class="name">${co.map(x=>N(x.r)).join(" & ")}</span>
+      <span class="d">${lead.v} vote${lead.v>1?"s":""} this season · won ${lead.wk} week${lead.wk===1?"":"s"}${rows[1]&&co.length===1?` · ${gap?`${gap} ahead of ${N(rows[1].r)}`:`edges ${N(rows[1].r)} on the tiebreak`}`:""}</span></div>`}
+  else h+=`<p class="pk-note">No votes yet. The season leader shows up here as soon as the first vote lands.</p>`;
 
-  if(PK.ready&&live){
-    const wk=S.weeks[live-1],P=byWeek[live]||{};
-    h+=`<p class="pk-sub"><b>Week ${live}</b> · locked. Everyone's picks are below.</p>`;
-    h+=`<div class="pk-games">${pairs(wk.games).map(([a,b])=>`<div class="pk-game">${[a,b].map((g,i,x)=>{const o=x[1-i],by=Object.keys(P).filter(r=>+P[r][g.m]===g.r).map(Number);
-      return`<div class="pk-row ${(g.p||0)>(o.p||0)?"up":""}"><span class="nm">${N(g.r)}</span><span class="sc">${f2(g.p||0)}</span></div><div class="pk-by">${by.length?`${by.length} pick${by.length>1?"s":""}: ${by.map(r=>r===PK.me?`<b>you</b>`:N(r)).join(", ")}`:"No picks"}</div>`}).join("")}</div>`).join("")}</div>`;
-  }
-
-  if(PK.ready){
-    const B={};S.teams.forEach(t=>B[t.r]={r:t.r,c:0,n:0,last:null});
-    let lastW=null;
-    S.weeks.filter(w=>w.status==="final"&&byWeek[w.w]).forEach(wk=>{lastW=wk.w;const win={};
-      pairs(wk.games).forEach(([a,b])=>win[a.m]=a.p>b.p?a.r:b.p>a.p?b.r:0);
-      Object.entries(byWeek[wk.w]).forEach(([r,pk])=>{const x=B[r];if(!x)return;let c=0,n=0;
-        Object.entries(pk).forEach(([m,p])=>{if(!(m in win))return;n++;if(win[m]&&+p===win[m])c++});
-        x.c+=c;x.n+=n;x.last={w:wk.w,c,n}})});
-    const rows=Object.values(B).filter(x=>x.n).sort((a,b)=>b.c-a.c||b.c/b.n-a.c/a.n);
-    h+=`<div style="display:grid;gap:8px"><h2>Pick'em standings</h2>`;
-    if(!rows.length)h+=`<p class="pk-note">Standings start once the first week of picks is final.</p>`;
-    else{const best=Math.max(...rows.map(x=>x.c));
-      h+=`<ul class="odds">${rows.map((x,i)=>`<li><span class="rk">${i+1}</span><div><div class="nm">${N(x.r)}${x.r===PK.me?'<span class="tag">You</span>':""}</div><div class="ow">${x.c}–${x.n-x.c} · ${Math.round(x.c/x.n*100)}% right${x.last&&x.last.w===lastW?` · week ${lastW}: ${x.last.c}/${x.last.n}`:` · missed week ${lastW}`}</div></div><span class="v ${x.c===best?"hot":""}">${x.c}</span><div class="track"><div class="fill ${x.c===best?"hot":""}" style="width:${x.c/x.n*100}%"></div></div></li>`).join("")}</ul>
-        <p class="pk-sub">Ranked by correct picks. A game you don't pick earns nothing; ties count for no one.</p>`}
+  if(open){
+    const V=W[open]||{},mine=V[PK.me];
+    h+=`<div class="vb-block"><p class="pk-sub"><b>Week ${open} vote</b> · ${mine?`You voted for ${N(mine)}. Tap someone else to change it.`:"Who was the very good bad boy this week?"} <span id="pk-save">${esc(PK.save)}</span><br>Closes ${when(kickoff(S.season,open+1))}. One vote per device each week.</p>
+      <div class="vb-grid">${byName.map(t=>`<button class="vb-pick" data-r="${t.r}" aria-pressed="${mine===t.r}">${esc(t.name)}</button>`).join("")}</div></div>`;
+    const c={};Object.values(V).forEach(r=>c[r]=(c[r]||0)+1);
+    const wr=Object.keys(c).map(Number).sort((a,b)=>c[b]-c[a]),wtop=wr.length?c[wr[0]]:0,inn=Object.keys(V).map(Number);
+    h+=`<div class="vb-block"><h3>Week ${open}, live</h3><p class="pk-sub">${inn.length} vote${inn.length===1?"":"s"} in so far.</p>`;
+    if(wr.length)h+=`<ul class="odds">${wr.map((r,i)=>`<li><span class="rk">${i+1}</span><div><div class="nm">${N(r)}${r===mine?'<span class="tag">Your vote</span>':""}</div></div><span class="v ${c[r]===wtop?"hot":""}">${c[r]}</span><div class="track"><div class="fill ${c[r]===wtop?"hot":""}" style="width:${c[r]/inn.length*100}%"></div></div></li>`).join("")}</ul>`;
     h+=`</div>`;
-  }
+  }else if(!over)h+=`<p class="pk-note">Voting opens at week 1 kickoff, ${when(next)}.</p>`;
+  else h+=`<p class="pk-sub">Voting is closed for ${S.season}. The totals below are final.</p>`;
+
+  if(rows.length){const best=lead.v;
+    h+=`<div class="vb-block"><h3>Season race</h3><ul class="odds">${rows.map((x,i)=>`<li><span class="rk">${i+1}</span><div><div class="nm">${N(x.r)}</div><div class="ow">Won ${x.wk} week${x.wk===1?"":"s"}</div></div><span class="v ${x.v===best?"hot":""}">${x.v}</span><div class="track"><div class="fill ${x.v===best?"hot":""}" style="width:${x.v/best*100}%"></div></div></li>`).join("")}</ul>`;
+    h+=`<p class="pk-sub">Every weekly vote adds up. Most votes after week ${S.regSeasonEnd} wins; ties go to most weeks won.</p></div>`}
+  const past=winners.filter(x=>x.w!==open).reverse();
+  if(past.length)h+=`<div class="vb-block"><h3>Weekly winners</h3><div class="pk-in">${past.map(x=>`<span>Wk ${x.w} · ${x.who.map(N).join(" & ")} (${x.n})</span>`).join("")}</div></div>`;
+
   el.innerHTML=h;
-  const sel=$("#pk-me");if(sel)sel.onchange=()=>{PK.me=+sel.value||null;PK.draft=null;PK.save="";try{PK.me?localStorage.setItem("cmfl_me",PK.me):localStorage.removeItem("cmfl_me")}catch(e){}renderPicks()};
-  el.querySelectorAll(".pk-team").forEach(b=>b.onclick=()=>{if(!PK.me||!PK.draft)return;
-    PK.draft.picks[b.dataset.m]=+b.dataset.r;
-    b.parentElement.querySelectorAll(".pk-team").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
-    const n=Object.keys(PK.draft.picks).length,sub=el.querySelector(".pk-sub");
-    if(sub&&sub.firstChild)sub.innerHTML=sub.innerHTML.replace(/\d+ of (\d+) picked/,`${n} of $1 picked`);
-    queueSave()});
+  el.querySelectorAll(".vb-pick").forEach(b=>b.onclick=()=>{if(!PK.me)return;
+    el.querySelectorAll(".vb-pick").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));castVote(+b.dataset.r)});
 }
 
 /* ---------- view ---------- */
@@ -516,7 +504,7 @@ async function refresh(){
   try{await refresh();setInterval(()=>{if(document.visibilityState==="visible")refresh().catch(()=>{})},5*60*1000)}
   catch(e){console.error(e);empty("Couldn't reach Sleeper. Check your connection and reload.")}
 })();
-window.__cmfl={analyze,receipts,shameCards,speechHistory,setData:d=>{DATA=d},setFun:f=>{FUN=f},render,PK,renderPicks,pickWeeks,kickoff};
+window.__cmfl={analyze,receipts,shameCards,speechHistory,setData:d=>{DATA=d},setFun:f=>{FUN=f},render,PK,renderPicks,voteWeek,tally,kickoff};
 })();
 </script>
 </body>
